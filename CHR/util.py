@@ -81,8 +81,8 @@ class AveragePrecisionMeter(object):
 
     def reset(self):
         """Resets the meter with empty member variables"""
-        self.scores = torch.FloatTensor(torch.FloatStorage())
-        self.targets = torch.LongTensor(torch.LongStorage())
+        self.scores = torch.FloatTensor(torch.UntypedStorage())
+        self.targets = torch.LongTensor(torch.UntypedStorage())
 
     def add(self, output, target):
         """
@@ -120,10 +120,14 @@ class AveragePrecisionMeter(object):
                 'dimensions for output should match previously added examples.'
 
         # make sure storage is of sufficient size
-        if self.scores.storage().size() < self.scores.numel() + output.numel():
-            new_size = math.ceil(self.scores.storage().size() * 1.5)
-            self.scores.storage().resize_(int(new_size + output.numel()))
-            self.targets.storage().resize_(int(new_size + output.numel()))
+        # if self.scores.storage().size() < self.scores.numel() + output.numel():
+        #     new_size = math.ceil(self.scores.storage().size() * 1.5)
+        #     self.scores.storage().resize_(int(new_size + output.numel()))
+        #     self.targets.storage().resize_(int(new_size + output.numel()))
+        if self.scores.untyped_storage().size() < self.scores.numel() + output.numel():
+            new_size = math.ceil(self.scores.untyped_storage().size() * 1.5)
+            self.scores.untyped_storage().resize_(int(new_size + output.numel()))
+            self.targets.untyped_storage().resize_(int(new_size + output.numel()))
 
         # store scores and targets
         offset = self.scores.size(0) if self.scores.dim() > 0 else 0

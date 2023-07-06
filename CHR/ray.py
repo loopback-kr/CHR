@@ -9,7 +9,7 @@ import torch
 import torch.utils.data as data
 from PIL import Image
 
-from CHR import util
+import util
 
 
 object_categories =['Gun','Knife','Wrench','Pliers','Scissors']
@@ -85,7 +85,7 @@ class XrayClassification(data.Dataset):
 
 
         # define path of csv file
-        path_csv = os.path.join(self.root, 'ImageSet','train_test_10-5')
+        path_csv = os.path.join(self.root, 'ImageSet','val/10')
         # define filename of csv file
         file_csv = os.path.join(path_csv,  set + '.csv')
 

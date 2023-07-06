@@ -7,7 +7,6 @@ import torch
 
 
 class ResNetCHR(nn.Module):
-
     def __init__(self, model, num_classes, dense=True):
         super(ResNetCHR, self).__init__()
 
@@ -41,8 +40,6 @@ class ResNetCHR(nn.Module):
         self.fc2 = nn.Linear(1024, num_classes)
         self.fc3 = nn.Linear(512, num_classes)
 
-
-
         # image normalization
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
@@ -50,7 +47,8 @@ class ResNetCHR(nn.Module):
     def _upsample_add(self,x,y):
 
         _, _, H, W=y.size()
-        z = F.upsample(x, size=(H, W), mode='bilinear')
+        # z = F.upsample(x, size=(H, W), mode='bilinear')
+        z = F.interpolate(x, size=(H, W), mode='bilinear')
         return  torch.cat([z,y],1)
     def get_config_optim(self,lr,lrp):
         return [{'params':self.features.parameters()},
@@ -100,14 +98,6 @@ class ResNetCHR(nn.Module):
 
         return o1,o2,o3
 
-
-
-
-
-
-
 def resnet101_CHR(num_classes, pretrained=True):
-    model = models.resnet101(pretrained)
-
-    return ResNetCHR(model, num_classes )
-
+    model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT)
+    return ResNetCHR(model, num_classes)

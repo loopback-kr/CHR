@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 import numpy as np
 
-from CHR.util import AveragePrecisionMeter, Warp
+from util import AveragePrecisionMeter, Warp
 
 
 class Engine(object):
@@ -89,7 +89,7 @@ class Engine(object):
 
         # record loss
         self.state['loss_batch'] = self.state['loss'].data
-        self.state['meter_loss'].add(self.state['loss_batch'])
+        self.state['meter_loss'].add(self.state['loss_batch'].detach().cpu())
 
         if display and self.state['print_freq'] != 0 and self.state['iteration'] % self.state['print_freq'] == 0:
             loss = self.state['meter_loss'].value()[0]
@@ -115,12 +115,8 @@ class Engine(object):
 
     def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True):
 
-        input_var = torch.autograd.Variable(self.state['input'])
-        target_var = torch.autograd.Variable(self.state['target'])
-
-        if not training:
-            input_var.volatile = True
-            target_var.volatile = True
+        input_var = torch.autograd.Variable(self.state['input']).cuda()
+        target_var = torch.autograd.Variable(self.state['target']).cuda()
 
         # compute output
         self.state['output'] = model(input_var)
@@ -219,7 +215,8 @@ class Engine(object):
             if self.state['multi_gpu']:
                 model = torch.nn.DataParallel(model, device_ids=self.state['device_ids']).cuda()
             else:
-                model = torch.nn.DataParallel(model).cuda()
+                # model = torch.nn.DataParallel(model).cuda()
+                model = model.cuda()
 
             criterion = criterion.cuda()
 
@@ -245,7 +242,8 @@ class Engine(object):
             self.save_checkpoint({
                 'epoch': epoch + 1,
                 'arch': self._state('arch'),
-                'state_dict': model.module.state_dict() if self.state['use_gpu'] else model.state_dict(),
+                # 'state_dict': model.module.state_dict() if self.state['use_gpu'] else model.state_dict(),
+                'state_dict': model.state_dict(),
                 'best_score': self.state['best_score'],
             }, is_best)
 
@@ -274,7 +272,7 @@ class Engine(object):
             self.on_start_batch(True, model, criterion, data_loader, optimizer)
 
             if self.state['use_gpu']:
-                self.state['target'] = self.state['target'].cuda(async=True)
+                self.state['target'] = self.state['target'].cuda(non_blocking=True)
 
             self.on_forward(True, model, criterion, data_loader, optimizer)
 
@@ -292,38 +290,40 @@ class Engine(object):
         # switch to evaluate mode
         model.eval()
 
-        self.on_start_epoch(False, model, criterion, data_loader)
+        with torch.no_grad():
 
-        if self.state['use_pb']:
-            data_loader = tqdm(data_loader, desc='Test')
+            self.on_start_epoch(False, model, criterion, data_loader)
 
-        end = time.time()
-        for i, (input, target) in enumerate(data_loader):
-            # measure data loading time
-            self.state['iteration'] = i
-            self.state['data_time_batch'] = time.time() - end
-            self.state['data_time'].add(self.state['data_time_batch'])
+            # if self.state['use_pb']:
+            #     data_loader = tqdm(data_loader, desc='Test')
 
-            self.state['input'] = input
-            self.state['target'] = target
-
-            self.on_start_batch(False, model, criterion, data_loader)
-
-            if self.state['use_gpu']:
-                self.state['target'] = self.state['target'].cuda(async=True)
-
-            self.on_forward(False, model, criterion, data_loader)
-
-            # measure elapsed time
-            self.state['batch_time_current'] = time.time() - end
-            self.state['batch_time'].add(self.state['batch_time_current'])
             end = time.time()
-            # measure accuracy
-            self.on_end_batch(False, model, criterion, data_loader)
+            for i, (input, target) in enumerate(data_loader):
+                # measure data loading time
+                self.state['iteration'] = i
+                self.state['data_time_batch'] = time.time() - end
+                self.state['data_time'].add(self.state['data_time_batch'])
 
-        score = self.on_end_epoch(False, model, criterion, data_loader)
+                self.state['input'] = input
+                self.state['target'] = target
 
-        return score
+                self.on_start_batch(False, model, criterion, data_loader)
+
+                if self.state['use_gpu']:
+                    self.state['target'] = self.state['target'].cuda(non_blocking=True)
+
+                self.on_forward(False, model, criterion, data_loader)
+
+                # measure elapsed time
+                self.state['batch_time_current'] = time.time() - end
+                self.state['batch_time'].add(self.state['batch_time_current'])
+                end = time.time()
+                # measure accuracy
+                self.on_end_batch(False, model, criterion, data_loader)
+
+            score = self.on_end_epoch(False, model, criterion, data_loader)
+
+            return score
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         if self._state('save_model_path') is not None:
@@ -348,7 +348,7 @@ class Engine(object):
     def adjust_learning_rate(self, optimizer):
         """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
         # lr = args.lr * (0.1 ** (epoch // 30))
-        if self.state['epoch'] is not 0 and self.state['epoch'] in self.state['epoch_step']:
+        if self.state['epoch'] != 0 and self.state['epoch'] in self.state['epoch_step']:
             print('update learning rate')
             for param_group in optimizer.state_dict()['param_groups']:
                 param_group['lr'] = param_group['lr'] * 0.1
@@ -496,11 +496,11 @@ class MultiLabelMAPEngine(Engine):
                 #print(self.state['epoch'], loss.cpu().numpy()[0], map)
                 print('Epoch: [{0}]\t'
                       'Loss {loss:.4f}\t'
-                      'mAP {map:.3f}'.format(self.state['epoch'], loss=loss.cpu().numpy()[0], map=map))
+                      'mAP {map:.3f}'.format(self.state['epoch'], loss=loss.cpu().numpy(), map=map))
             else:
                 #print(self.state['ap_meter'].value())
 
-                print('Test: \t Loss {loss:.4f}\t  mAP {map:.3f}'.format(loss=loss.cpu().numpy()[0], map=map))
+                print('Test: \t Loss {loss:.4f}\t  mAP {map:.3f}'.format(loss=loss.cpu().numpy(), map=map))
 
         return map
 
