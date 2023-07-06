@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 
 def binary_cross_entropy(input, target, eps=1e-10):
-    '''if not (target.size() == input.size()):
+    """if not (target.size() == input.size()):
         warnings.warn("Using a target size ({}) that is different to the input size ({}) is deprecated. "
                       "Please ensure they have the same size.".format(target.size(), input.size()))
     if input.nelement() != target.nelement():
@@ -40,27 +40,26 @@ def binary_cross_entropy(input, target, eps=1e-10):
         new_size = _infer_size(target.size(), weight.size())
         weight = weight.expand(new_size)
         if torch.is_tensor(weight):
-            weight = Variable(weight)'''
-    input=torch.sigmoid(input)
-    return -(target*torch.log(input+eps)+(1-target)*torch.log(1-input+eps))
-
+            weight = Variable(weight)"""
+    input = torch.sigmoid(input)
+    return -(
+        target * torch.log(input + eps) + (1 - target) * torch.log(1 - input + eps)
+    )
 
 
 class MultiLabelSoftMarginLoss(_WeightedLoss):
-
     def forward(self, input, target):
         return binary_cross_entropy(input, target)
 
 
-
-args.data='data'
-args.resume = './models/checkpoint.pth.tar'
+args.data = "data"
+args.resume = "./models/checkpoint.pth.tar"
 
 use_gpu = torch.cuda.is_available()
 
 # define dataset
-train_dataset = XrayClassification(args.data, 'trainval')
-val_dataset = XrayClassification(args.data, 'test')
+train_dataset = XrayClassification(args.data, "trainval")
+val_dataset = XrayClassification(args.data, "test")
 num_classes = 5
 
 # load model
@@ -70,16 +69,23 @@ model = resnet101_CHR(num_classes, pretrained=True)
 criterion = MultiLabelSoftMarginLoss()
 
 # define optimizer
-optimizer = torch.optim.SGD(model.parameters(),
-                            lr=args.lr,
-                            momentum=args.momentum,
-                            weight_decay=args.weight_decay)
+optimizer = torch.optim.SGD(
+    model.parameters(),
+    lr=args.lr,
+    momentum=args.momentum,
+    weight_decay=args.weight_decay,
+)
 
-state = {'batch_size': args.batch_size, 'image_size': args.image_size, 'max_epochs': args.epochs,
-            'evaluate': args.evaluate, 'resume': args.resume}
-state['difficult_examples'] = True
-state['save_model_path'] = './models'
-state['epoch_step']={20}
+state = {
+    "batch_size": args.batch_size,
+    "image_size": args.image_size,
+    "max_epochs": args.epochs,
+    "evaluate": args.evaluate,
+    "resume": args.resume,
+}
+state["difficult_examples"] = True
+state["save_model_path"] = "./models"
+state["epoch_step"] = {20}
 
 engine = MultiLabelMAPEngine(state)
 engine.learning(model, criterion, train_dataset, val_dataset, optimizer)
