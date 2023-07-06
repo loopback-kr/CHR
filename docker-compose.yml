@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  debug:
+    container_name: Service
+    hostname: $PWD
+    build:
+      context: $PWD
+      args:
+        - USER
+        - XDG_RUNTIME_DIR
+    tty: true
+    stdin_open: true
+    network_mode: default
+    shm_size: 80g
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
+              count: all
+    volumes:
+      - ~/.gitconfig:/home/$USER/.gitconfig:ro
+      - $PWD:/workspace
+      - ~/data/SIXray/dataset:/workspace/data:ro
