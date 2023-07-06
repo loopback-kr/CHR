@@ -5,23 +5,26 @@
 ![Illustration](Illustration.png)
 
 ## Requirements
-[Conda virtual environment](https://conda.io/docs/user-guide/tasks/manage-environments.html) is recommended: `conda env create -f environment.yml`
 
-* Python3.5
-* PyTorch: 0.3.1
-* Packages: torch, numpy, tqdm 
+* Python 3.10 or newer
+* PyTorch: 2.0.0 or newer
 
 ## Usage
-1. Clone the CHR repository: 
+1. Clone the CHR repository:
     ```bash
-    git clone https://github.com/MeioJane/CHR.git
+    git clone https://github.com/loopback-kr/CHR.git
     ```
 
-2. Run the training demo: 
+1. Create new container:
     ```bash
-    cd CHR/
-    bash CHR/runme.sh
+    docker compose up -d
     ```
+
+1. Run the training demo in the container:
+    ```bash
+    python CHR/main.py
+    ```
+
 ## Checkpoint
 If you only want to test images, you can download [here](https://pan.baidu.com/s/19wuNL8KaZ5vm-yiJfu2CZA?pwd=tunq).
 ## Citation 
@@ -37,6 +40,6 @@ If you use the code in your research, please cite:
 ```
 
 ## Acknowledgement
-In this project, we reimplemented CHR on PyTorch based on [wildcat.pytorch](https://github.com/durandtibo/wildcat.pytorch). 
+This project was forked from [MeioJane/CHR](https://github.com/MeioJane/CHR) and refactored to PyTorch 2.0 or newer.
 
 
