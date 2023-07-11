@@ -13,12 +13,32 @@
             "justMyCode": true
         },
         {
-            "name": "Python: Main.py",
+            "name": "Python: train.py",
             "type": "python",
             "request": "launch",
-            "program": "CHR/main.py",
+            "program": "CHR/train.py",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "args": [
+                "--deterministic"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            }
+        },
+        {
+            "name": "Python: test.py",
+            "type": "python",
+            "request": "launch",
+            "program": "CHR/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--deterministic"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            }
         }
     ]
 }

@@ -1,3 +1,7 @@
 tqdm
 torchnet
+scikit-learn
+opencv-python
+matplotlib
+pandas
 wandb

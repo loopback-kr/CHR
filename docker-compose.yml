@@ -23,4 +23,4 @@ services:
     volumes:
       - ~/.gitconfig:/home/$USER/.gitconfig:ro
       - $PWD:/workspace
-      - ~/data/SIXray/dataset:/workspace/data:ro
+      - ~/data/SIXray:/workspace/data:ro
