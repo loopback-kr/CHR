@@ -1,10 +1,8 @@
 import math
-from urllib.request import urlretrieve
-
-import torch
+import torch, torch.nn as nn, torch.nn.functional as F
 from PIL import Image
 from tqdm import tqdm
-
+from torchnet.meter import APMeter
 
 class Warp(object):
     def __init__(self, size, interpolation=Image.BILINEAR):
@@ -22,64 +20,9 @@ class Warp(object):
             )
         )
 
-
-def download_url(url, destination=None, progress_bar=True):
-    """Download a URL to a local file.
-
-    Parameters
-    ----------
-    url : str
-        The URL to download.
-    destination : str, None
-        The destination of the file. If None is given the file is saved to a temporary directory.
-    progress_bar : bool
-        Whether to show a command-line progress bar while downloading.
-
-    Returns
-    -------
-    filename : str
-        The location of the downloaded file.
-
-    Notes
-    -----
-    Progress bar use/example adapted from tqdm documentation: https://github.com/tqdm/tqdm
-    """
-
-    def my_hook(t):
-        last_b = [0]
-
-        def inner(b=1, bsize=1, tsize=None):
-            if tsize is not None:
-                t.total = tsize
-            if b > 0:
-                t.update((b - last_b[0]) * bsize)
-            last_b[0] = b
-
-        return inner
-
-    if progress_bar:
-        with tqdm(unit="B", unit_scale=True, miniters=1, desc=url.split("/")[-1]) as t:
-            filename, _ = urlretrieve(url, filename=destination, reporthook=my_hook(t))
-    else:
-        filename, _ = urlretrieve(url, filename=destination)
-
-
-class AveragePrecisionMeter(object):
-    """
-    The APMeter measures the average precision per class.
-    The APMeter is designed to operate on `NxK` Tensors `output` and
-    `target`, and optionally a `Nx1` Tensor weight where (1) the `output`
-    contains model output scores for `N` examples and `K` classes that ought to
-    be higher when the model is more convinced that the example should be
-    positively labeled, and smaller when the model believes the example should
-    be negatively labeled (for instance, the output of a sigmoid function); (2)
-    the `target` contains only values 0 (for negative examples) and 1
-    (for positive examples); and (3) the `weight` ( > 0) represents weight for
-    each sample.
-    """
+class APMeter2(APMeter):
 
     def __init__(self, difficult_examples=False):
-        super(AveragePrecisionMeter, self).__init__()
         self.reset()
         self.difficult_examples = difficult_examples
 
@@ -163,7 +106,7 @@ class AveragePrecisionMeter(object):
             targets = self.targets[:, k]
 
             # compute average precision
-            ap[k] = AveragePrecisionMeter.average_precision(
+            ap[k] = self.average_precision(
                 scores, targets, self.difficult_examples
             )
         return ap

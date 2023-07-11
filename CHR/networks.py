@@ -1,14 +1,13 @@
-import torch.nn as nn
+import torch, torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
-import torch
 
 
 class ResNetCHR(nn.Module):
-    def __init__(self, model, num_classes, dense=True):
+    def __init__(self, model, num_classes):
         super(ResNetCHR, self).__init__()
 
-        # self.dense = dense
+        # Resnet 모델 변경
         for item in model.children():
             if isinstance(item, nn.BatchNorm2d):
                 item.affine = False
@@ -37,10 +36,6 @@ class ResNetCHR(nn.Module):
         self.fc1 = nn.Linear(2048, num_classes)
         self.fc2 = nn.Linear(1024, num_classes)
         self.fc3 = nn.Linear(512, num_classes)
-
-        # image normalization
-        self.image_normalization_mean = [0.485, 0.456, 0.406]
-        self.image_normalization_std = [0.229, 0.224, 0.225]
 
     def _upsample_add(self, x, y):
         _, _, H, W = y.size()
@@ -95,10 +90,14 @@ class ResNetCHR(nn.Module):
         l2_6 = self.po3(l2_5)
         l2_7 = l2_6.view(l2_6.size(0), -1)
         o3 = self.fc3(l2_7)
-
         return o1, o2, o3
-
 
 def resnet101_CHR(num_classes, pretrained=True):
     model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT)
     return ResNetCHR(model, num_classes)
+
+def resnet101(num_classes, pretrained=True):
+    model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT)
+    # Modify the last layer of ResNet
+    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    return model
