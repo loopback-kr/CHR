@@ -5,9 +5,8 @@ import torch.nn.functional as F
 
 class ResNetCHR(nn.Module):
     def __init__(self, model, num_classes):
-        super(ResNetCHR, self).__init__()
+        super().__init__()
 
-        # Resnet 모델 변경
         for item in model.children():
             if isinstance(item, nn.BatchNorm2d):
                 item.affine = False
@@ -43,26 +42,6 @@ class ResNetCHR(nn.Module):
         z = F.interpolate(x, size=(H, W), mode="bilinear")
         return torch.cat([z, y], 1)
 
-    def get_config_optim(self, lr, lrp):
-        return [
-            {"params": self.features.parameters()},
-            {"params": self.layer1.parameters()},
-            {"params": self.layer2.parameters()},
-            {"params": self.layer3.parameters()},
-            {"params": self.layer4.parameters()},
-            {"params": self.cov4.parameters()},
-            {"params": self.cov3.parameters()},
-            {"params": self.cov2.parameters()},
-            {"params": self.cov3_1.parameters()},
-            {"params": self.cov2_1.parameters()},
-            {"params": self.po1.parameters()},
-            {"params": self.po2.parameters()},
-            {"params": self.po3.parameters()},
-            {"params": self.fc1.parameters()},
-            {"params": self.fc2.parameters()},
-            {"params": self.fc3.parameters()},
-        ]
-
     def forward(self, x):
         x = self.features(x)
         l1 = self.layer1(x)
@@ -92,12 +71,16 @@ class ResNetCHR(nn.Module):
         o3 = self.fc3(l2_7)
         return o1, o2, o3
 
-def resnet101_CHR(num_classes, pretrained=True):
-    model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT)
-    return ResNetCHR(model, num_classes)
-
-def resnet101(num_classes, pretrained=True):
-    model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT)
-    # Modify the last layer of ResNet
+def resnet18(num_classes, pretrained=True):
+    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT if pretrained else None)
     model.fc = nn.Linear(model.fc.in_features, num_classes)
     return model
+
+def resnet101(num_classes, pretrained=True):
+    model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT if pretrained else None)
+    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    return model
+
+def resnet101_CHR(num_classes, pretrained=True):
+    model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT if pretrained else None)
+    return ResNetCHR(model, num_classes)
