@@ -1,5 +1,5 @@
 import sys, os, json, pickle, csv, re, random, logging, importlib, argparse, math
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import join, basename, exists, splitext, dirname, isdir, isfile
 import matplotlib.pyplot as plt
 
@@ -20,3 +20,6 @@ def create_logger():
     logging.getLogger('matplotlib.font_manager').disabled = True
     return logger
 log = create_logger()
+
+def human_readble(seconds):
+    return (datetime(1, 1, 1) + timedelta(seconds=seconds)).strftime("%M:%S")
