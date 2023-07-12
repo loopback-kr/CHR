@@ -9,8 +9,6 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 from torchvision.transforms import *
-# CHR libs
-from util import Warp
 
 
 def read_object_labels_csv(csv_path, header=True):
@@ -42,7 +40,7 @@ class XrayDataset(Dataset):
         if transform_mode == 'train':
             self.transforms = Compose(
                 [
-                    Warp(256), # To crop more bigger size is needed
+                    Resize((256, 256), interpolation=InterpolationMode.BILINEAR),
                     RandomHorizontalFlip(),
                     RandomCrop(224),
                     ToTensor(),
@@ -52,7 +50,7 @@ class XrayDataset(Dataset):
         elif transform_mode == 'valid':
             self.transforms = Compose(
                 [
-                    Warp(224),
+                    Resize((224, 224), interpolation=InterpolationMode.BILINEAR),
                     ToTensor(),
                     Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ]

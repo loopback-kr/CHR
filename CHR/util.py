@@ -2,8 +2,6 @@ import sys, os, json, pickle, csv, re, random, logging, importlib, argparse, mat
 from datetime import datetime
 from os.path import join, basename, exists, splitext, dirname, isdir, isfile
 import matplotlib.pyplot as plt
-import torch, torch.nn as nn, torch.nn.functional as F
-from PIL import Image
 
 
 def create_logger():
@@ -22,30 +20,3 @@ def create_logger():
     logging.getLogger('matplotlib.font_manager').disabled = True
     return logger
 log = create_logger()
-
-def visuzlize_metrics(args, metrics):
-    plt.figure()
-    plt.xlabel('Epoch')
-    plt.xlim(1, args.epochs+1)
-    plt.ylabel('Loss')
-    plt.plot(metrics['loss_train'], label='Train loss', color='b')
-    plt.plot(metrics['loss_valid'], label='Valid loss', color='g')
-    plt.legend()
-    plt.savefig(join('logs', f'metrics-{args.log_name}.png'))
-    plt.close()
-
-class Warp: # TODO: replace to resize transforms
-    def __init__(self, size, interpolation=Image.BILINEAR):
-        self.size = int(size)
-        self.interpolation = interpolation
-
-    def __call__(self, img):
-        return img.resize((self.size, self.size), self.interpolation)
-
-    def __str__(self):
-        return (
-            self.__class__.__name__
-            + " (size={size}, interpolation={interpolation})".format(
-                size=self.size, interpolation=self.interpolation
-            )
-        )
