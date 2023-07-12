@@ -66,6 +66,7 @@ state = {
     "best_score" : 0,
     "use_supervision" : args.use_supervision,
     "use_maskloss" : args.use_maskloss,
+    "classes" : ["Gun", "Knife", "Wrench", "Pliers", "Scissors"],
 }
 log.info(f'State: {state}')
 
@@ -74,14 +75,14 @@ images_meta = read_object_labels_csv(args.csv_path)
 train_images_meta, valid_images_meta = train_test_split(images_meta, test_size=0.2, random_state=0)
 # Define dataset
 train_dataset = XrayDataset(data_dir=args.data_dir, images_meta=train_images_meta, transform_mode='train')
-log.info(f'Load train dataset and metadata: classes: {train_dataset.classes}, number of data: {len(train_dataset)}')
+log.info(f'Load train dataset and metadata: classes: {len(state["classes"])}, number of data: {len(train_dataset)}')
 valid_dataset = XrayDataset(data_dir=args.data_dir, images_meta=valid_images_meta, transform_mode='valid')
-log.info(f'Load valid dataset and metadata: classes: {train_dataset.classes}, number of data: {len(train_dataset)}')
+log.info(f'Load valid dataset and metadata: classes: {len(state["classes"])}, number of data: {len(train_dataset)}')
 
 if args.network_arch == 'resnet101':
-    model = resnet101(num_classes=5, pretrained=True)
+    model = resnet101(num_classes=len(state["classes"]), pretrained=True)
 elif args.network_arch == 'resnet101CHR':
-    model = resnet101_CHR(num_classes=5, pretrained=True)
+    model = resnet101_CHR(num_classes=len(state["classes"]), pretrained=True)
 else:
     raise KeyError
 log.info(f'Created model architecture: {model.__class__.__name__}')

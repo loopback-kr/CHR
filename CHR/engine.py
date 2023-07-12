@@ -107,10 +107,13 @@ class Engine:
         )
 
     def train(self, model, data_loader, criterion, optimizer, device:str='cpu'):
-        self.reset_metrics()
 
         model.train()
         data_loader = tqdm(data_loader, desc="Train", colour='green', dynamic_ncols=True)
+
+        total_loss = []
+        mAP = MultilabelAveragePrecision(num_labels=len(self.state['classes']), average="macro", thresholds=None)
+
         for _, (image, label, metadata) in enumerate(data_loader):
 
             image = image.to(device, non_blocking=True)
@@ -141,20 +144,15 @@ class Engine:
             optimizer.step()
 
             # measure accuracy and mAP
-            self.state["meter_loss"].add(loss.detach().cpu())
-            self.state["ap_meter"].add(output[0].detach().cpu().numpy() if self.state["use_supervision"] else output.detach().cpu().numpy(), label)
-            self.state["map"].update(output[0].detach().cpu().numpy() if self.state["use_supervision"] else output.detach().cpu().numpy(), label)
-            # BinaryAveragePrecision(thresholds=None)
-            data_loader.set_description(desc=f"Train: Loss={loss.detach().cpu().item():.04f}")
+            total_loss.append(loss.item())
+            mAP.update(output[0].item() if self.state['use_supervision'] else output.item(), label.item().int())
+            data_loader.set_description(desc=f"Train: Loss={loss.item():.04f}")
 
-        map = 100 * self.state["ap_meter"].value().mean()
-        # map = 100 * self.state["ap_meter_origin"].value().mean()
-        map = 100 * self.state["map"].value().mean()
-        loss = self.state["meter_loss"].value()[0] # mean
+        map = mAP.compute()
+        mean_total_loss = np.array(total_loss).mean()
         log.info(
-            f"Epoch: [{self.state['epoch']}]\t"
-            f"Loss {loss.cpu().numpy():.4f}\t"
-            f"mAP {map:.3f}"
+            f"Loss {mean_total_loss:.4f}\t"
+            f"mAP {map:.4f}"
         )
 
     def validate(self, data_loader, model, criterion, device:str='cpu'):
