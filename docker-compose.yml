@@ -2,13 +2,8 @@ version: '3.8'
 
 services:
   debug:
-    container_name: Service
     hostname: $PWD
-    build:
-      context: $PWD
-      args:
-        - USER
-        - XDG_RUNTIME_DIR
+    build: $PWD
     tty: true
     stdin_open: true
     network_mode: default
