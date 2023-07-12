@@ -77,7 +77,7 @@ train_images_meta, valid_images_meta = train_test_split(images_meta, test_size=0
 train_dataset = XrayDataset(data_dir=args.data_dir, images_meta=train_images_meta, transform_mode='train')
 log.info(f'Load train dataset and metadata: classes: {len(state["classes"])}, number of data: {len(train_dataset)}')
 valid_dataset = XrayDataset(data_dir=args.data_dir, images_meta=valid_images_meta, transform_mode='valid')
-log.info(f'Load valid dataset and metadata: classes: {len(state["classes"])}, number of data: {len(train_dataset)}')
+log.info(f'Load valid dataset and metadata: classes: {len(state["classes"])}, number of data: {len(valid_dataset)}')
 
 if args.network_arch == 'resnet101':
     model = resnet101(num_classes=len(state["classes"]), pretrained=True)

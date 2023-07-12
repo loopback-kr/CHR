@@ -60,7 +60,7 @@ class Engine:
             self.update_lr(optimizer)
 
             # Train for one epoch
-            self.train(model, train_loader, criterion, optimizer, device=device)
+            self.train(model, train_loader, criterion, optimizer, epoch=current_epoch, device=device)
 
             # Evaluate on validation set
             prec1 = self.validate(valid_loader, model, criterion, device=device)
@@ -106,10 +106,10 @@ class Engine:
             f'Inference finished.\n'
         )
 
-    def train(self, model, data_loader, criterion, optimizer, device:str='cpu'):
+    def train(self, model, data_loader, criterion, optimizer, epoch, device:str='cpu'):
 
         model.train()
-        data_loader = tqdm(data_loader, desc="Train", colour='green', dynamic_ncols=True)
+        data_loader = tqdm(data_loader, desc="Train", colour='green', dynamic_ncols=True, leave=False)
 
         total_loss = []
         mAP = MultilabelAveragePrecision(num_labels=len(self.state['classes']), average="macro", thresholds=None)
@@ -145,14 +145,13 @@ class Engine:
 
             # measure accuracy and mAP
             total_loss.append(loss.item())
-            mAP.update(output[0].item() if self.state['use_supervision'] else output.item(), label.item().int())
-            data_loader.set_description(desc=f"Train: Loss={loss.item():.04f}")
+            mAP.update(output[0].detach().cpu() if self.state['use_supervision'] else output.item(), label.detach().cpu().int())
+            data_loader.set_description(desc=f"Train :: Epoch:{epoch:4d}/{self.state['max_epochs']:d}, Loss:{loss.item():.04f}")
 
         map = mAP.compute()
         mean_total_loss = np.array(total_loss).mean()
         log.info(
-            f"Loss {mean_total_loss:.4f}\t"
-            f"mAP {map:.4f}"
+            f"Train :: Epoch:{epoch:4d}/{self.state['max_epochs']:d}, Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{data_loader.format_dict['elapsed']:.4f}"
         )
 
     def validate(self, data_loader, model, criterion, device:str='cpu'):
@@ -161,7 +160,7 @@ class Engine:
             total_loss = []
             mAP = MultilabelAveragePrecision(num_labels=len(self.state['classes']), average="macro", thresholds=None)
 
-            data_loader = tqdm(data_loader, desc='Validating', colour='blue', dynamic_ncols=True)
+            data_loader = tqdm(data_loader, desc='Validating', colour='blue', dynamic_ncols=True, leave=False)
             for _, (image, label, metadata) in enumerate(data_loader):
 
                 image = image.to(device, non_blocking=True)
@@ -174,13 +173,12 @@ class Engine:
                 # measure accuracy and mAP
                 total_loss.append(loss.item())
                 mAP.update(output.detach().cpu(), label.detach().cpu().int())
-                data_loader.set_description(desc=f"Validate: Loss={loss.item():.04f}")
+                data_loader.set_description(desc=f"Validate :: Loss:{loss.item():.04f}")
 
             map = mAP.compute()
             mean_total_loss = np.array(total_loss).mean()
             log.info(
-                f"Loss {mean_total_loss:.4f}\t"
-                f"mAP {map:.4f}"
+                f"Validate :: Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{data_loader.format_dict['elapsed']:.4f}"
             )
         return map
     

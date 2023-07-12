@@ -27,7 +27,6 @@ parser.add_argument('--model_path',             default='./models.bak/model_best
 parser.add_argument('--device',                 default='cuda', type=str, help='device to load model and data')
 parser.add_argument('--use_supervision',        default=True, type=bool, help='whether to use supervision of CHR')
 parser.add_argument('--seed',                   default=0, type=int, help='seed number for deterministic')
-
 args = parser.parse_args()
 
 if args.deterministic:
