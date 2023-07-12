@@ -27,6 +27,7 @@ def read_object_labels_csv(csv_path, header=True):
                     num_categories = len(row) - 1
                 name = row[0]
                 labels = (np.asarray(row[1 : num_categories + 1])).astype(np.float32)
+                labels[labels == -1 ] = 0
                 labels = torch.from_numpy(labels)
                 item = (name, labels)
                 images.append(item)
@@ -34,12 +35,9 @@ def read_object_labels_csv(csv_path, header=True):
     return images
 
 class XrayDataset(Dataset):
-    def __init__(self, data_dir, images_meta, transform_mode='train', classes=["Gun", "Knife", "Wrench", "Pliers", "Scissors"]):
+    def __init__(self, data_dir, images_meta, transform_mode='train'):
         self.data_dir = data_dir
-        self.classes = classes
         self.images_meta = images_meta
-        image_norm_mean = [0.485, 0.456, 0.406]
-        image_norm_std = [0.229, 0.224, 0.225]
         
         if transform_mode == 'train':
             self.transforms = Compose(
@@ -48,7 +46,7 @@ class XrayDataset(Dataset):
                     RandomHorizontalFlip(),
                     RandomCrop(224),
                     ToTensor(),
-                    Normalize(mean=image_norm_mean, std=image_norm_std),
+                    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ]
             )
         elif transform_mode == 'valid':
@@ -56,17 +54,20 @@ class XrayDataset(Dataset):
                 [
                     Warp(224),
                     ToTensor(),
-                    Normalize(mean=image_norm_mean, std=image_norm_std),
+                    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ]
             )
         else:
             raise NotImplementedError(f'Unknown transform mode: {transform_mode}')
         
     def __getitem__(self, index):
-        path, target = self.images_meta[index]
+        path, label = self.images_meta[index]
         image = Image.open(join(self.data_dir, path + ".jpg")).convert("RGB")
         image = self.transforms(image)
-        return (image, path), target
+        metadata = {
+            "UID": path
+        }
+        return image, label, metadata
 
     def __len__(self):
         return len(self.images_meta)

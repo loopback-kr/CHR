@@ -71,16 +71,16 @@ class ResNetCHR(nn.Module):
         o3 = self.fc3(l2_7)
         return o1, o2, o3
 
-def resnet18(num_classes, pretrained=True):
+def resnet18(num_classes, pretrained=False):
     model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT if pretrained else None)
     model.fc = nn.Linear(model.fc.in_features, num_classes)
     return model
 
-def resnet101(num_classes, pretrained=True):
+def resnet101(num_classes, pretrained=False):
     model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT if pretrained else None)
     model.fc = nn.Linear(model.fc.in_features, num_classes)
     return model
 
-def resnet101_CHR(num_classes, pretrained=True):
+def resnet101_CHR(num_classes, pretrained=False):
     model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT if pretrained else None)
     return ResNetCHR(model, num_classes)
