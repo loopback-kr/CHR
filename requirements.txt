@@ -1,5 +1,5 @@
 tqdm
-torchnet
+torchmetrics
 scikit-learn
 opencv-python
 matplotlib
