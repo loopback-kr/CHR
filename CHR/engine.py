@@ -178,7 +178,7 @@ class Engine:
             map = mAP.compute()
             mean_total_loss = np.array(total_loss).mean()
             log.info(
-                f"Validate :: Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{data_loader.format_dict['elapsed']:.4f}"
+                f"Validate ::             Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{data_loader.format_dict['elapsed']:.4f}"
             )
         return map
     
