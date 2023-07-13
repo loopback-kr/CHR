@@ -6,11 +6,10 @@ from shutil import copy, copytree, rmtree
 from copy import deepcopy
 from glob import glob, iglob
 # PyTorch packages
-import torch, numpy as np
+import torch, torch.nn as nn, numpy as np
 # CHR libs
 from engine import Engine
 from networks import resnet18, resnet101, resnet101_CHR
-from loss import MultiLabelSoftMarginLoss
 from datasets import XrayDataset, read_object_labels_csv
 from sklearn.model_selection import train_test_split
 from util import log
@@ -39,7 +38,7 @@ parser.add_argument('--use_maskloss',           default=True, type=bool, help='w
 parser.add_argument('--use_wandb',              default=True, type=bool, help='whether to use wandb')
 parser.add_argument('--wandb_key',              default=os.environ['WANDB_KEY'], type=str, help='whether to use wandb')
 parser.add_argument('--wandb_project',          default="CHR", type=str, help='whether to use wandb')
-parser.add_argument('--wandb_name',             default="Use maskloss, Use supervision", type=str, help='whether to use wandb')
+parser.add_argument('--wandb_name',             default=None, type=str, help='whether to use wandb')
 args = parser.parse_args()
 
 if args.deterministic:
@@ -99,9 +98,8 @@ else:
 
 log.info(f'Created model architecture: {model.__class__.__name__}')
 log.debug(model)
-
-criterion = MultiLabelSoftMarginLoss()
-log.info(f'Define loss function: {criterion.__class__.__name__}')
+criterion = nn.MultiLabelSoftMarginLoss()
+log.info(f'Define loss function: {criterion}')
 
 optimizer = torch.optim.SGD(
     model.parameters(),
@@ -109,7 +107,7 @@ optimizer = torch.optim.SGD(
     momentum=args.momentum,
     weight_decay=args.wd,
 )
-log.info(f'Define optimizer: {optimizer.__class__.__name__}')
+log.info(f'Define optimizer: {optimizer}')
 
 Engine(state).learning(model, criterion, train_dataset, valid_dataset, optimizer)
 
