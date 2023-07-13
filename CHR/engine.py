@@ -55,15 +55,15 @@ class Engine:
         criterion = criterion.to(device)
         log.info(f'Upload model at device:{device}')
 
-        for current_epoch in range(self.state["start_epoch"], self.state["max_epochs"] + 1):
+        for current_epoch in range(self.state["start_epoch"], self.state["max_epochs"]):
             self.state["epoch"] = current_epoch
             self.update_lr(optimizer)
 
             # Train for one epoch
-            self.train(model, train_loader, criterion, optimizer, epoch=current_epoch, device=device)
+            train_loss = self.train(model, train_loader, criterion, optimizer, epoch=current_epoch, device=device)
 
             # Evaluate on validation set
-            prec1 = self.validate(valid_loader, model, criterion, device=device)
+            valid_loss, prec1 = self.validate(valid_loader, model, criterion, device=device)
 
             # Remember best prec@1 and save checkpoint
             if prec1 > self.state["best_score"]:
@@ -73,14 +73,24 @@ class Engine:
                         "epoch": current_epoch + 1,
                         "best_score": self.state["best_score"],
                         "state_dict": model.state_dict(),
-                    }, join(self.state["model_save_dir"], f"{self.state['network_arch']}_{current_epoch:04d}_{self.state['best_score']}.pth"))
+                    }, join(self.state["model_save_dir"], f"{self.state['network_arch']}_{current_epoch:04d}_{self.state['best_score']:.04f}.pth"))
                 log.info(f"Saved best model: {self.state['best_score']:.4f}")
+            
+            if self.state['use_wandb']:
+                import wandb
+                wandb.log({
+                    'Train loss (mean)' : train_loss,
+                    'Valid loss (mean)' : valid_loss,
+                    'score (mAP)'       : prec1,
+                    'best_score (mAP)'  : self.state["best_score"],
+            })
         
         log.info(
-            f'--------------------------------------------------------------------------------',
-            f'Training finished.',
-            f'Final epoch: {current_epoch}',
-            f'Best score: {self.state["best_score"]}',
+            f'--------------------------------------------------------------------------------\n'
+            f'Training finished.\n'
+            f'Final epoch: {current_epoch}\n'
+            f'Best score: {self.state["best_score"]:.04f}\n'
+            f'Final score: {prec1:.04f}\n'
         )
     
     def inference(self, model, criterion, test_dataset):
@@ -122,22 +132,25 @@ class Engine:
             output = model(image)
             loss = 0
 
-            for i in range(3 if self.state["use_supervision"] else 1):
-                output0 = output[i]
-                n_data = np.ones(output0.shape)
-                index = np.where(output0.detach().cpu().numpy() < -20)
-                if self.state["use_maskloss"] and len(index[0] != 0):
-                    n_data[index] = 0
-                    n_data = 1 - n_data
-                    n_data = (torch.from_numpy(n_data).float().to(device))
-                    n_target = 1 - label.cpu().numpy()
-                    n_target = torch.from_numpy(n_target).to(device)
-                    mask = 1 - torch.mul(n_data, n_target)
-                    loss += torch.mean(
-                        torch.mul(mask, criterion(output[i], label))
-                    )
-                else:
-                    loss += torch.mean(criterion(output[i], label))
+            if 'CHR' in model._get_name():
+                for i in range(3 if self.state['use_supervision'] else 1):
+                    output0 = output[i]
+                    n_data = np.ones(output0.shape)
+                    index = np.where(output0.detach().cpu().numpy() < -20)
+                    if self.state["use_maskloss"] and len(index[0] != 0):
+                        n_data[index] = 0
+                        n_data = 1 - n_data
+                        n_data = (torch.from_numpy(n_data).float().to(device))
+                        n_target = 1 - label.cpu().numpy()
+                        n_target = torch.from_numpy(n_target).to(device)
+                        mask = 1 - torch.mul(n_data, n_target)
+                        loss += torch.mean(
+                            torch.mul(mask, criterion(output[i], label))
+                        )
+                    else:
+                        loss += torch.mean(criterion(output[i], label))
+            else:
+                loss += torch.mean(criterion(output, label))
             
             optimizer.zero_grad()
             loss.backward()
@@ -145,7 +158,7 @@ class Engine:
 
             # measure accuracy and mAP
             total_loss.append(loss.item())
-            mAP.update(output[0].detach().cpu() if self.state['use_supervision'] else output.item(), label.detach().cpu().int())
+            mAP.update(output[0].detach().cpu() if 'CHR' in model._get_name() else output.detach().cpu(), label.detach().cpu().int())
             data_loader.set_description(desc=f"Train :: Epoch:{epoch:4d}/{self.state['max_epochs']:d}, Loss:{loss.item():.04f}")
 
         map = mAP.compute()
@@ -153,6 +166,7 @@ class Engine:
         log.info(
             f"Train :: Epoch:{epoch:4d}/{self.state['max_epochs']:d}, Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{data_loader.format_dict['elapsed']:.4f}"
         )
+        return mean_total_loss
 
     def validate(self, data_loader, model, criterion, device:str='cpu'):
         model.eval()
@@ -167,7 +181,7 @@ class Engine:
                 label = label.to(device, non_blocking=True)
 
                 output = model(image)
-                output = output[0] if self.state['use_supervision'] else output
+                output = output[0] if 'CHR' in model._get_name() else output
                 loss = torch.mean(criterion(output, label))
 
                 # measure accuracy and mAP
@@ -180,7 +194,7 @@ class Engine:
             log.info(
                 f"Validate ::             Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{data_loader.format_dict['elapsed']:.4f}"
             )
-        return map
+        return mean_total_loss, map
     
     def visualize(self, model, data_loader):
         model.eval()

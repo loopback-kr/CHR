@@ -40,8 +40,17 @@ class XrayDataset(Dataset):
         if transform_mode == 'train':
             self.transforms = Compose(
                 [
+                    Resize((224, 224), interpolation=InterpolationMode.BILINEAR),
+                    ToTensor(),
+                    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ]
+            )
+        elif transform_mode == 'train_with_augmentation':
+            self.transforms = Compose(
+                [
                     Resize((256, 256), interpolation=InterpolationMode.BILINEAR),
                     RandomHorizontalFlip(),
+                    RandomVerticalFlip(),
                     RandomCrop(224),
                     ToTensor(),
                     Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),

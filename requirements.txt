@@ -1,3 +1,4 @@
+black
 tqdm
 torchmetrics
 scikit-learn
