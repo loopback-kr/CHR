@@ -15,6 +15,8 @@ from tqdm import tqdm
 from util import log
 from torchmetrics.classification import MultilabelAveragePrecision
 from sklearn.metrics import average_precision_score
+from util import human_readble
+
 
 class Engine:
     def __init__(self, state={}):
@@ -164,7 +166,7 @@ class Engine:
         map = mAP.compute()
         mean_total_loss = np.array(total_loss).mean()
         log.info(
-            f"Train :: Epoch:{epoch:4d}/{self.state['max_epochs']:d}, Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{data_loader.format_dict['elapsed']:.4f}"
+            f"Train :: Epoch:{epoch:4d}/{self.state['max_epochs']:d}, Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{human_readble(data_loader.format_dict['elapsed'])}"
         )
         return mean_total_loss
 
@@ -192,7 +194,7 @@ class Engine:
             map = mAP.compute()
             mean_total_loss = np.array(total_loss).mean()
             log.info(
-                f"Validate ::             Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{data_loader.format_dict['elapsed']:.4f}"
+                f"Validate ::             Loss:{mean_total_loss:.4f}, mAP:{map:.4f}, Time:{human_readble(data_loader.format_dict['elapsed'])}"
             )
         return mean_total_loss, map
     
