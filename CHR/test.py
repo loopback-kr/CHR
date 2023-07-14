@@ -6,7 +6,7 @@ from shutil import copy, copytree, rmtree
 from copy import deepcopy
 from glob import glob, iglob
 # PyTorch packages
-import torch, numpy as np
+import torch, torch.nn as nn, numpy as np
 # CHR libs
 from engine import Engine
 from networks import resnet101, resnet101_CHR
@@ -68,7 +68,6 @@ if isfile(args.model_path):
     state["best_score"] = checkpoint["best_score"]
     model.load_state_dict(checkpoint["state_dict"])
     log.info(f"Loaded checkpoint (epoch {checkpoint['epoch']})")
-    criterion = MultiLabelSoftMarginLoss()
-    Engine(state).inference(model, criterion, valid_dataset)
+    criterion = nn.MultiLabelSoftMarginLoss()
 else:
     raise FileNotFoundError(f"No checkpoint found at {args.model_path}")

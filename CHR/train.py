@@ -82,9 +82,9 @@ log.info(f'State: {state}')
 images_meta = read_object_labels_csv(args.csv_path)[:]
 train_images_meta, valid_images_meta = train_test_split(images_meta, test_size=0.2, random_state=0)
 # Define dataset
-train_dataset = XrayDataset(data_dir=args.data_dir, images_meta=train_images_meta, transform_mode='train')
+train_dataset = XrayDataset(data_dir=args.data_dir, image_list=train_images_meta, transform_mode='train')
 log.info(f'Load train dataset and metadata: classes: {len(state["classes"])}, number of data: {len(train_dataset)}')
-valid_dataset = XrayDataset(data_dir=args.data_dir, images_meta=valid_images_meta, transform_mode='valid')
+valid_dataset = XrayDataset(data_dir=args.data_dir, image_list=valid_images_meta, transform_mode='valid')
 log.info(f'Load valid dataset and metadata: classes: {len(state["classes"])}, number of data: {len(valid_dataset)}')
 
 if args.network_arch == 'resnet18':

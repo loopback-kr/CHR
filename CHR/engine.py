@@ -12,10 +12,11 @@ from torch.utils.data import DataLoader
 import torch.optim
 import numpy as np
 from tqdm import tqdm
-from util import log
+from util import log, GradCam, human_readble
 from torchmetrics.classification import MultilabelAveragePrecision
-from sklearn.metrics import average_precision_score
-from util import human_readble
+import matplotlib.pyplot as plt, cv2
+from PIL import Image
+from torchvision.transforms.functional import resize
 
 
 class Engine:
@@ -109,7 +110,6 @@ class Engine:
 
         device = self.state['device']
         model = model.to(device)
-        criterion = criterion.to(device)
 
         self.validate(test_loader, model, criterion, device=device)
 
@@ -177,7 +177,7 @@ class Engine:
             mAP = MultilabelAveragePrecision(num_labels=len(self.state['classes']), average="macro", thresholds=None)
 
             data_loader = tqdm(data_loader, desc='Validating', colour='blue', dynamic_ncols=True, leave=False)
-            for _, (image, label, metadata) in enumerate(data_loader):
+            for image, label in data_loader:
 
                 image = image.to(device, non_blocking=True)
                 label = label.to(device, non_blocking=True)
