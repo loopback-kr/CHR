@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 import torch.optim
 import numpy as np
 from tqdm import tqdm
-from util import log, GradCam, human_readble
+from util import log, human_readble
 from torchmetrics.classification import MultilabelAveragePrecision
 import matplotlib.pyplot as plt, cv2
 from PIL import Image
