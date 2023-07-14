@@ -23,8 +23,7 @@ parser.add_argument('-j', '--num_workers',      default=16, type=int, help='numb
 parser.add_argument('--deterministic',          action='store_true', help='fix randomness for each train')
 parser.add_argument('--epochs',                 default=10, type=int, help='number of total epochs to train model')
 parser.add_argument('--start_epoch',            default=0, type=int, help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--train_batch_size', default=128, type=int, help='mini-batch size of train loader (default: 256)') # runme.sh: 320
-parser.add_argument('--valid_batch_size',       default=32, type=int, help='mini-batch size of valid loader (default: 1)')
+parser.add_argument('-b', '--batch_size',       default=128, type=int, help='mini-batch size of train loader (default: 256)') # runme.sh: 320
 parser.add_argument('--lr', '--learning_rate',  default=0.01, type=float, help='initial learning rate')
 parser.add_argument('--momentum',               default=0.9, type=float, help='momentum')
 parser.add_argument('--wd', '--weight_decay',   default=1e-4, type=float, help='weight decay (default: 1e-4)')
@@ -59,8 +58,7 @@ if args.use_wandb:
     wandb.init(project=args.wandb_project, name=args.wandb_name)
 
 state = {
-    "train_batch_size": args.train_batch_size,
-    "valid_batch_size": args.valid_batch_size,
+    "batch_size": args.batch_size,
     "network_arch": args.network_arch,
     "image_size": args.image_size,
     "start_epoch": args.start_epoch,
@@ -79,7 +77,7 @@ state = {
 log.info(f'State: {state}')
 
 # Read csv and split to train, validation sets
-images_meta = read_object_labels_csv(args.csv_path)[:]
+images_meta = read_object_labels_csv(args.csv_path)[:100]
 train_images_meta, valid_images_meta = train_test_split(images_meta, test_size=0.2, random_state=0)
 # Define dataset
 train_dataset = XrayDataset(data_dir=args.data_dir, image_list=train_images_meta, transform_mode='train')

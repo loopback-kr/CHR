@@ -28,14 +28,14 @@ class Engine:
         # Data loading
         train_loader = DataLoader(
             train_dataset,
-            batch_size=self.state["train_batch_size"],
+            batch_size=self.state["batch_size"],
             shuffle=True,
             num_workers=self.state["num_workers"],
             pin_memory=True if torch.cuda.is_available() else False
         )
         valid_loader = DataLoader(
             val_dataset,
-            batch_size=self.state["valid_batch_size"],
+            batch_size=self.state["batch_size"],
             shuffle=False,
             num_workers=self.state["num_workers"],
             pin_memory=True if torch.cuda.is_available() else False
@@ -102,7 +102,7 @@ class Engine:
         # Data loading
         test_loader = DataLoader(
             test_dataset,
-            batch_size=self.state["valid_batch_size"],
+            batch_size=self.state["batch_size"],
             shuffle=False,
             num_workers=self.state["num_workers"],
             pin_memory=True if torch.cuda.is_available() else False
@@ -126,7 +126,7 @@ class Engine:
         total_loss = []
         mAP = MultilabelAveragePrecision(num_labels=len(self.state['classes']), average="macro", thresholds=None)
 
-        for _, (image, label, metadata) in enumerate(data_loader):
+        for image, label, _ in data_loader:
 
             image = image.to(device, non_blocking=True)
             label = label.to(device, non_blocking=True)
@@ -136,21 +136,7 @@ class Engine:
 
             if 'CHR' in model._get_name():
                 for i in range(3 if self.state['use_supervision'] else 1):
-                    output0 = output[i]
-                    n_data = np.ones(output0.shape)
-                    index = np.where(output0.detach().cpu().numpy() < -20)
-                    if self.state["use_maskloss"] and len(index[0] != 0):
-                        n_data[index] = 0
-                        n_data = 1 - n_data
-                        n_data = (torch.from_numpy(n_data).float().to(device))
-                        n_target = 1 - label.cpu().numpy()
-                        n_target = torch.from_numpy(n_target).to(device)
-                        mask = 1 - torch.mul(n_data, n_target)
-                        loss += torch.mean(
-                            torch.mul(mask, criterion(output[i], label))
-                        )
-                    else:
-                        loss += torch.mean(criterion(output[i], label))
+                    loss += torch.mean(criterion(output[i], label))
             else:
                 loss += torch.mean(criterion(output, label))
             
@@ -177,7 +163,7 @@ class Engine:
             mAP = MultilabelAveragePrecision(num_labels=len(self.state['classes']), average="macro", thresholds=None)
 
             data_loader = tqdm(data_loader, desc='Validating', colour='blue', dynamic_ncols=True, leave=False)
-            for image, label in data_loader:
+            for image, label, _ in data_loader:
 
                 image = image.to(device, non_blocking=True)
                 label = label.to(device, non_blocking=True)

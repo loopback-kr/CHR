@@ -10,7 +10,6 @@ import torch, torch.nn as nn, numpy as np
 # CHR libs
 from engine import Engine
 from networks import resnet101, resnet101_CHR
-from loss import MultiLabelSoftMarginLoss
 from datasets import XrayDataset, read_object_labels_csv
 from util import log
 
@@ -42,7 +41,7 @@ else:
     torch.backends.cudnn.benchmark = True
 
 state = {
-    "valid_batch_size": args.batch_size,
+    "batch_size": args.batch_size,
     "image_size": args.image_size,
     "num_workers": min(os.cpu_count(), args.num_workers),
     "device": args.device,
@@ -52,7 +51,7 @@ state = {
 log.info(f'State: {state}')
 
 # Define dataset
-valid_dataset = XrayDataset(join(args.data_dir), read_object_labels_csv(args.csv_path), transform_mode='valid')
+valid_dataset = XrayDataset(join(args.data_dir), read_object_labels_csv(args.csv_path)[:1000], transform_mode='valid')
 
 # Load model
 if args.network_arch == 'resnet101':
@@ -69,5 +68,6 @@ if isfile(args.model_path):
     model.load_state_dict(checkpoint["state_dict"])
     log.info(f"Loaded checkpoint (epoch {checkpoint['epoch']})")
     criterion = nn.MultiLabelSoftMarginLoss()
+    Engine(state).inference(model, criterion, valid_dataset)
 else:
     raise FileNotFoundError(f"No checkpoint found at {args.model_path}")
