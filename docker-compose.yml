@@ -16,6 +16,5 @@ services:
               capabilities: [ gpu ]
               count: all
     volumes:
-      - ~/.gitconfig:/home/$USER/.gitconfig
       - $PWD:/workspace
       - ~/data/SIXray:/workspace/data:ro
